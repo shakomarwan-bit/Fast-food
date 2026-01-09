@@ -712,10 +712,92 @@
             grid-template-columns: 1fr;
         }
     }
+    /* Login Screen Styles */
+.login-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+}
+
+.login-screen.hidden {
+    display: none;
+}
+
+.login-box {
+    background: white;
+    padding: 50px;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    text-align: center;
+    max-width: 400px;
+    width: 90%;
+}
+
+.login-title {
+    font-size: 2.5em;
+    color: var(--primary);
+    margin-bottom: 20px;
+}
+
+.login-subtitle {
+    color: #666;
+    margin-bottom: 30px;
+    font-size: 1.1em;
+}
+
+.login-input {
+    width: 100%;
+    padding: 15px;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    font-size: 1.2em;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.login-input:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.login-btn {
+    width: 100%;
+    padding: 15px;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 1.3em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.login-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
 </style>
 
 </head>
 <body>
+    <!-- Login Screen -->
+<div class="login-screen" id="loginScreen">
+    <div class="login-box">
+        <div class="login-title">🍔 فاست فۆد 🍕</div>
+        <div class="login-subtitle">تکایە ناوت بنووسە</div>
+        <input type="text" class="login-input" id="loginName" placeholder="ناوت لێرە بنووسە...">
+        <button class="login-btn" onclick="handleLogin()">داخڵ بوون ←</button>
+    </div>
+</div>
     <!-- Notification Badge -->
     <div class="notification-badge" id="notificationBadge" style="display: none;" onclick="goToOnlineOrders()">
         🔔 <span id="newOrdersCount">0</span> داواکاری نوێ
@@ -1184,6 +1266,68 @@ d">
     </div>
 
     <script>
+    let currentUser = null;
+const OWNER_NAME = 'shakar12121';
+
+function handleLogin() {
+    const name = document.getElementById('loginName').value.trim();
+    
+    if (!name) {
+        alert('❌ تکایە ناوت بنووسە!');
+        return;
+    }
+    
+    // Check role
+    let role = 'member'; // Default
+    
+    if (name.toLowerCase() === OWNER_NAME.toLowerCase()) {
+        role = 'owner';
+    }
+    
+    // Check if user is admin
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    const existingUser = users.find(u => u.name.toLowerCase() === name.toLowerCase());
+    
+    if (existingUser) {
+        role = existingUser.role;
+    } else {
+        // Add new user
+        users.push({ name: name, role: role, joinDate: new Date().toISOString() });
+        localStorage.setItem('users', JSON.stringify(users));
+    }
+    
+    currentUser = { name: name, role: role };
+    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+    
+    // Hide login screen
+    document.getElementById('loginScreen').classList.add('hidden');
+    
+    // Apply role permissions
+    applyRolePermissions();
+}
+
+function applyRolePermissions() {
+    if (!currentUser) return;
+    
+    if (currentUser.role === 'member') {
+        // Member: only customer view
+        document.getElementById('adminBtn').style.display = 'none';
+        switchMode('customer');
+    } else {
+        // Owner/Admin: show all
+        document.getElementById('adminBtn').style.display = 'block';
+    }
+}
+
+function checkExistingLogin() {
+    const saved = localStorage.getItem('currentUser');
+    if (saved) {
+        currentUser = JSON.parse(saved);
+        document.getElementById('loginScreen').classList.add('hidden');
+        applyRolePermissions();
+    }
+}
+
         let data = {
             products: [],
             categories: ['هەموو', 'خواردن', 'خواردنەوە', 'دەسەرت'],
@@ -1649,6 +1793,8 @@ d">
         }
 
         function init() {
+            checkExistingLogin();
+            showProducts(); 
             showProducts();
             showCategories();
             showAdminProducts();
@@ -2470,4 +2616,3 @@ d">
     </script>
 </body>
 </html>
-
