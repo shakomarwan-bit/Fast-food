@@ -2030,6 +2030,70 @@ function checkExistingLogin() {
                     return;
                 }
             }
+            
+            function confirmMemberOrder() {
+    const items = Object.values(data.cart);
+    if (items.length === 0) return;
+
+    const isDelivery = document.getElementById('delivery').checked;
+    const subtotal = items.reduce((s, i) => s + (i.price * i.quantity), 0);
+    const deliveryFee = isDelivery ? data.settings.deliveryFee : 0;
+    const total = subtotal + deliveryFee;
+
+    let phone, address, location;
+
+    if (isDelivery) {
+        address = document.getElementById('deliveryAddress').value.trim();
+        location = document.getElementById('deliveryLocation').value.trim();
+        phone = document.getElementById('deliveryPhone').value.trim();
+
+        if (!address || !phone) {
+            alert('❌ تکایە ناونیشان و ژمارەی مۆبایل بنووسە!');
+            return;
+        }
+    } else {
+        phone = document.getElementById('pickupPhone').value.trim();
+        address = 'لە شوێن';
+
+        if (!phone) {
+            alert('❌ تکایە ژمارەی مۆبایل بنووسە!');
+            return;
+        }
+    }
+
+    // Update stock
+    items.forEach(item => {
+        const product = data.products.find(p => p.id === item.id);
+        product.stock -= item.quantity;
+    });
+
+    // Create order for online orders
+    const order = {
+        id: Date.now(),
+        number: data.onlineOrders.length + 1,
+        date: new Date().toISOString(),
+        items: items,
+        subtotal: subtotal,
+        deliveryFee: deliveryFee,
+        total: total,
+        deliveryType: isDelivery ? 'گەیاندن' : 'لە شوێن',
+        address: address,
+        location: location || null,
+        phone: phone
+    };
+
+    data.onlineOrders.push(order);
+    save();
+    
+    // Show success message
+    alert('✅ داواکارییەکەت بە سەرکەوتوویی نێردرا!\n\nژمارەی داواکاری: #' + order.number.toString().padStart(4, '0') + '\n\nسوپاس بۆ داواکارییەکەت! 🙏');
+    
+    // Clear cart
+    data.cart = {};
+    updateCart();
+    showProducts();
+}
+
 
             const urlParams = new URLSearchParams(window.location.search);
             const isOnlineOrder = urlParams.get('mode') === 'order';
